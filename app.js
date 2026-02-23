@@ -36,7 +36,7 @@ function init() {
       sidebar.classList.remove('open');
       overlay.classList.remove('open');
     });
-    
+
     initTooltip();
     renderSidebar(routeGroups);
 
@@ -44,6 +44,15 @@ function init() {
       svg.setAttribute('width',   W);
       svg.setAttribute('height',  H);
       svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+      // ✅ 추가: 모바일 초기 줌 보정 (첫 렌더링 시 한 번만)
+      if (_transform.scale === 1 && W < 768) {
+        _transform.scale = 2.5;
+        _transform.x = -(W * 0.7);
+        _transform.y = -(H * 0.3);
+        applyTransform();
+      }
+      
       var toSVG = createProjector(bounds, W, H, { top:60, right:80, bottom:60, left:80 });
       renderGrid(gridLayer, W, H);
       renderMap(roadsLayer, dotsLayer, routeGroups, toSVG, openTabs);
@@ -92,6 +101,7 @@ var MIN_SCALE = 0.5;
 var MAX_SCALE = 8;
 
 function applyTransform() {
+  if (W && H) clampTransform(W, H);
   var t = _transform;
   var layer = document.getElementById('transform-layer');
   if (layer) {
@@ -99,6 +109,16 @@ function applyTransform() {
       'translate(' + t.x + ',' + t.y + ') scale(' + t.scale + ')'
     );
   }
+}
+
+// 트랜스폼 - 이동/패닝 제한 조정
+function clampTransform(W, H) {
+  var maxX =  W * 0.8;
+  var minX = -W * 0.8 * _transform.scale;
+  var maxY =  H * 0.8;
+  var minY = -H * 0.8 * _transform.scale;
+  _transform.x = Math.min(maxX, Math.max(minX, _transform.x));
+  _transform.y = Math.min(maxY, Math.max(minY, _transform.y));
 }
 
 function initZoomPan(svg) {

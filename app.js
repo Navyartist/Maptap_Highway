@@ -3,8 +3,9 @@
 //  라이브러리 없음 | SVG <polyline> + <circle> 기반 렌더링
 //  크기 계산: ResizeObserver로 실제 DOM 크기 보장
 // ─────────────────────────────────────────────────────────────
-// ── 1. 데이터 불러오기 ────────────────────────────────────────────
 
+
+// ── 1. 데이터 불러오기 ────────────────────────────────────────────
 function fetchAllRoutes() {
   return fetch('./data.json').then(function(r) { return r.json(); });
 }
@@ -21,6 +22,21 @@ function init() {
     var gridLayer  = svg.querySelector('#grid-layer');
     var roadsLayer = svg.querySelector('#roads-layer');
     var dotsLayer  = svg.querySelector('#dots-layer');
+    var transformLayer = document.getElementById('transform-layer');
+
+    // 햄버거 메뉴
+    var hamburger = document.getElementById('hamburger');
+    var sidebar   = document.querySelector('.sidebar');
+    var overlay   = document.getElementById('sidebar-overlay');
+
+    hamburger.addEventListener('click', function() {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('open');
+    });
+    overlay.addEventListener('click', function() {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('open');
+    });
 
     initTooltip();
     renderSidebar(routeGroups);
@@ -29,6 +45,15 @@ function init() {
       svg.setAttribute('width',   W);
       svg.setAttribute('height',  H);
       svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+      // ✅ 추가: 모바일 초기 줌 보정 (첫 렌더링 시 한 번만)
+      if (_transform.scale === 1 && W < 768) {
+        _transform.scale = 2.5;
+        _transform.x = -(W * 0.7);
+        _transform.y = -(H * 0.3);
+        applyTransform();
+      }
+      
       var toSVG = createProjector(bounds, W, H, { top:60, right:80, bottom:60, left:80 });
       renderGrid(gridLayer, W, H);
       renderMap(roadsLayer, dotsLayer, routeGroups, toSVG, openTabs);
@@ -51,6 +76,7 @@ function init() {
         draw(W, H);
         if (!initialized) {
           initialized = true;
+          initZoomPan(svg);
           var available = Object.keys(routeGroups);
           available.forEach(function(r){ openTabs.push(r); });
           setActive(available[0]);
@@ -67,6 +93,140 @@ function init() {
       'beforeend',
       '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#e84040;font-size:14px;">API 연결 실패: ' + err.message + '</div>'
     );
+  });
+}
+
+// ── 8. 줌/패닝 ────────────────────────────────────────────────
+var _transform = { x: 0, y: 0, scale: 1 };
+var MIN_SCALE = 0.5;
+var MAX_SCALE = 8;
+
+function applyTransform() {
+  if (W && H) clampTransform(W, H);
+  var t = _transform;
+  var layer = document.getElementById('transform-layer');
+  if (layer) {
+    layer.setAttribute('transform',
+      'translate(' + t.x + ',' + t.y + ') scale(' + t.scale + ')'
+    );
+  }
+}
+
+// 트랜스폼 - 이동/패닝 제한 조정
+function clampTransform(W, H) {
+  var maxX =  W * 0.8;
+  var minX = -W * 0.8 * _transform.scale;
+  var maxY =  H * 0.8;
+  var minY = -H * 0.8 * _transform.scale;
+  _transform.x = Math.min(maxX, Math.max(minX, _transform.x));
+  _transform.y = Math.min(maxY, Math.max(minY, _transform.y));
+}
+
+function initZoomPan(svg) {
+  // 휠 줌
+  svg.addEventListener('wheel', function(e) {
+    e.preventDefault();
+
+    var delta  = e.deltaY > 0 ? 0.9 : 1.1;
+    var newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, _transform.scale * delta));
+
+    // 커서 위치 기준으로 줌
+    var rect   = svg.getBoundingClientRect();
+    var mouseX = e.clientX - rect.left;
+    var mouseY = e.clientY - rect.top;
+
+    _transform.x = mouseX - (mouseX - _transform.x) * (newScale / _transform.scale);
+    _transform.y = mouseY - (mouseY - _transform.y) * (newScale / _transform.scale);
+    _transform.scale = newScale;
+
+    applyTransform();
+  }, { passive: false });
+
+
+  // 마우스 드래그 패닝
+  var _dragging = false;
+  var _dragStart = { x: 0, y: 0 };
+
+  svg.addEventListener('mousedown', function(e) {
+    _dragging = true;
+    _dragStart.x = e.clientX - _transform.x;
+    _dragStart.y = e.clientY - _transform.y;
+    svg.style.cursor = 'grabbing';
+  });
+
+  svg.addEventListener('mousemove', function(e) {
+    if (!_dragging) return;
+    _transform.x = e.clientX - _dragStart.x;
+    _transform.y = e.clientY - _dragStart.y;
+    applyTransform();
+  });
+
+  svg.addEventListener('mouseup', function() {
+    _dragging = false;
+    svg.style.cursor = 'grab';
+  });
+
+  svg.addEventListener('mouseleave', function() {
+    _dragging = false;
+    svg.style.cursor = 'default';
+  });
+
+  // 기본 커서
+  svg.style.cursor = 'grab';
+
+  // 터치 패닝 & 핀치 줌
+  var _prevTouchDist = 0;
+  var _touchStart = { x: 0, y: 0 };
+
+  svg.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      // 패닝 시작
+      _touchStart.x = e.touches[0].clientX - _transform.x;
+      _touchStart.y = e.touches[0].clientY - _transform.y;
+    } else if (e.touches.length === 2) {
+      // 핀치 줌 시작 — 두 손가락 거리 기억
+      var dx = e.touches[0].clientX - e.touches[1].clientX;
+      var dy = e.touches[0].clientY - e.touches[1].clientY;
+      _prevTouchDist = Math.sqrt(dx*dx + dy*dy);
+    }
+  }, { passive: false });
+
+  svg.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      // 패닝
+      _transform.x = e.touches[0].clientX - _touchStart.x;
+      _transform.y = e.touches[0].clientY - _touchStart.y;
+      applyTransform();
+
+    } else if (e.touches.length === 2) {
+      // 핀치 줌
+      var dx = e.touches[0].clientX - e.touches[1].clientX;
+      var dy = e.touches[0].clientY - e.touches[1].clientY;
+      var dist = Math.sqrt(dx*dx + dy*dy);
+
+      if (_prevTouchDist > 0) {
+        var delta = dist / _prevTouchDist;
+        var newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, _transform.scale * delta));
+
+        // 두 손가락 중심점 기준으로 줌
+        var rect   = svg.getBoundingClientRect();
+        var midX   = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+        var midY   = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+
+        _transform.x = midX - (midX - _transform.x) * (newScale / _transform.scale);
+        _transform.y = midY - (midY - _transform.y) * (newScale / _transform.scale);
+        _transform.scale = newScale;
+
+        applyTransform();
+      }
+      _prevTouchDist = dist;
+    }
+  }, { passive: false });
+
+  svg.addEventListener('touchend', function() {
+    _prevTouchDist = 0;
   });
 }
 

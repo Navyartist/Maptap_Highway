@@ -253,6 +253,63 @@
       color: var(--muted);
     }
     .status-item span { color: var(--accent2); }
+
+    /* ── 햄버거 버튼 ── */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 24px;
+      height: 18px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+    .hamburger span {
+      display: block;
+      width: 100%;
+      height: 2px;
+      background: var(--text);
+      border-radius: 2px;
+    }
+
+    /* ── 모바일 레이아웃 ── */
+    @media (max-width: 768px) {
+      .hamburger {
+        display: flex;
+      }
+      .header-meta {
+        display: none;
+      }
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        display: none;
+        position: fixed;
+        top: 52px;
+        left: 0;
+        width: 240px;
+        height: calc(100vh - 52px);
+        z-index: 100;
+        box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+      }
+      .sidebar.open {
+        display: flex;
+      }
+      /* 사이드바 열릴 때 배경 딤처리 */
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 99;
+      }
+      .sidebar-overlay.open {
+        display: block;
+      }
+    }
   </style>
 </head>
 <body>
@@ -260,8 +317,12 @@
 <header>
   <div class="logo">MAPTAP <span>Highway</span></div>
   <div class="header-meta">한국 주요 5대 고속도로 영업소 시각화</div>
+  <button class="hamburger" id="hamburger" aria-label="메뉴">
+    <span></span><span></span><span></span>
+  </button>
 </header>
 
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
 <div class="layout">
   <!-- Sidebar -->
   <aside class="sidebar">
@@ -284,8 +345,10 @@
           </filter>
         </defs>
         <g id="grid-layer"></g>
-        <g id="roads-layer"></g>
-        <g id="dots-layer"></g>
+        <g id="transform-layer">
+          <g id="roads-layer"></g>
+          <g id="dots-layer"></g>
+        </g>
       </svg>
       <div id="tooltip">
         <div class="tt-name" id="tt-name"></div>

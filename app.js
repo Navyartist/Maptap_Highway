@@ -23,6 +23,20 @@ function init() {
     var dotsLayer  = svg.querySelector('#dots-layer');
     var transformLayer = document.getElementById('transform-layer');
 
+    // 햄버거 메뉴
+    var hamburger = document.getElementById('hamburger');
+    var sidebar   = document.querySelector('.sidebar');
+    var overlay   = document.getElementById('sidebar-overlay');
+
+    hamburger.addEventListener('click', function() {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('open');
+    });
+    overlay.addEventListener('click', function() {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('open');
+    });
+    
     initTooltip();
     renderSidebar(routeGroups);
 

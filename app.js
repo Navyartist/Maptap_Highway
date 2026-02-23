@@ -3,34 +3,6 @@
 //  라이브러리 없음 | SVG <polyline> + <circle> 기반 렌더링
 //  크기 계산: ResizeObserver로 실제 DOM 크기 보장
 // ─────────────────────────────────────────────────────────────
-
-// ── 1. API 데이터 불러오기 ────────────────────────────────────────────
-// function fetchAllRoutes() {
-//   var TOTAL_PAGES = 6;
-//   var requests = [];
-
-//   for (var page = 1; page <= TOTAL_PAGES; page++) {
-//     var url = API_BASE
-//       + '?key=' + API_KEY
-//       + '&type=json'
-//       + '&numOfRows=100'
-//       + '&pageNo=' + page;
-//     requests.push(fetch(url).then(function(res) { return res.json(); }));
-//   }
-
-//   return Promise.all(requests).then(function(results) {
-//     var combined = [];
-//     results.forEach(function(r) {
-//       if (r.list) {
-//         r.list.forEach(function(d) {
-//           // 5대 노선만 추가
-//           if (TARGET_ROUTES[d.routeNo]) combined.push(d);
-//         });
-//       }
-//     });
-//     return { list: combined };
-//   });
-// }
 // ── 1. 데이터 불러오기 ────────────────────────────────────────────
 
 function fetchAllRoutes() {

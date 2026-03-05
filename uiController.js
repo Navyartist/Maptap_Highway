@@ -100,7 +100,12 @@ export function updateSidebarHighlight(activeRoute) {
 /**
  * 상태바 업데이트
  */
-export function updateStatusBar(stationCount, routeCount) {
+export function updateStatusBar(stationCount, routeCount, zoomLevel) {
   document.getElementById('st-count').textContent  = stationCount;
   document.getElementById('st-routes').textContent = routeCount;
+  
+  if (zoomLevel !== undefined) {
+    var zoomPercent = Math.round(zoomLevel * 100);
+    document.getElementById('st-zoom').textContent = zoomPercent + '%';
+  }
 }

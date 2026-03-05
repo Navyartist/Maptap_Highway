@@ -8,20 +8,38 @@
  * @param {Number} canvasW - SVG 캔버스 너비
  * @param {Number} canvasH - SVG 캔버스 높이
  * @param {Object} pad - { top, right, bottom, left } 여백
+ * @param {Number} zoomLevel - 줌 레벨 (1.0 = 기본, 2.0 = 2배 확대)
+ * @param {Number} panX - 패닝 X 오프셋 (픽셀)
+ * @param {Number} panY - 패닝 Y 오프셋 (픽셀)
  * @returns {Function} (lon, lat) => { x, y }
  */
-export function createProcessor(bounds, canvasW, canvasH, pad) {
+export function createProcessor(bounds, canvasW, canvasH, pad, zoomLevel, panX, panY) {
+  zoomLevel = zoomLevel || 1.0;
+  panX = panX || 0;
+  panY = panY || 0;
+  
   const mapW    = canvasW - pad.left - pad.right;
   const mapH    = canvasH - pad.top  - pad.bottom;
   const lonSpan = bounds.maxLon - bounds.minLon;
   const latSpan = bounds.maxLat - bounds.minLat;
   
-  // 종횡비 유지하며 최대 크기로 스케일링
-  const scale   = Math.min(mapW / lonSpan, mapH / latSpan);
+  // 기본 스케일 계산 (종횡비 유지)
+  const baseScale = Math.min(mapW / lonSpan, mapH / latSpan);
   
-  // 중앙 정렬을 위한 오프셋
-  const offX    = pad.left  + (mapW - lonSpan * scale) / 2;
-  const offY    = pad.top   + (mapH - latSpan * scale) / 2;
+  // 줌 레벨 적용
+  const scale = baseScale * zoomLevel;
+  
+  // 중앙 정렬을 위한 기본 오프셋
+  const baseOffX = pad.left  + (mapW - lonSpan * baseScale) / 2;
+  const baseOffY = pad.top   + (mapH - latSpan * baseScale) / 2;
+  
+  // 줌 중심점 (캔버스 중심)
+  const centerX = canvasW / 2;
+  const centerY = canvasH / 2;
+  
+  // 줌 시 중심점 기준으로 확대되도록 오프셋 조정
+  const offX = centerX + (baseOffX - centerX) * zoomLevel + panX;
+  const offY = centerY + (baseOffY - centerY) * zoomLevel + panY;
 
   return function toSVG(lon, lat) {
     return {

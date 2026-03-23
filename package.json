@@ -1,0 +1,24 @@
+{
+  "name": "maptap_highway",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Navyartist/Maptap_Highway.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Navyartist/Maptap_Highway/issues"
+  },
+  "homepage": "https://github.com/Navyartist/Maptap_Highway#readme",
+  "type": "module",
+  "dependencies": {
+    "dotenv": "^17.3.1"
+  }
+}

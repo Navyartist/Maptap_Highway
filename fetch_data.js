@@ -1,3 +1,6 @@
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 const API_KEY  = process.env.ROAD_API_KEY;
 const API_BASE = 'https://data.ex.co.kr/openapi/locationinfo/locationinfoUnit';
 const TARGET   = { "001":true, "010":true, "015":true, "035":true, "050":true };
